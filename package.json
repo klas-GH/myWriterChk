@@ -1,0 +1,10 @@
+{
+  "name": "writing-email-helper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Write, check, count, and prepare your text for email.",
+  "scripts": {
+    "test": "node tests/run.js",
+    "test:long": "node tests/run.js"
+  }
+}

@@ -3,8 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Writing & Email Helper</title>
+    <meta name="description" content="Write, check, count, and prepare your text for email.">
+    <title>Writing &amp; Email Helper</title>
     <link rel="stylesheet" href="style.css">
+
+    <script>
+        // Applied before first paint so dark mode never flashes white.
+        // This must stay inline: it runs before style.css's cascade settles and
+        // before script.js loads, so STORAGE_KEYS is not available yet.
+        // The 'theme' key below must match STORAGE_KEYS.theme in script.js.
+        try {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark-theme');
+            }
+        } catch (error) {
+            // Storage unavailable.
+        }
+    </script>
 </head>
 <body>
 
@@ -14,13 +29,14 @@
     class="theme-toggle"
     aria-label="Toggle dark mode"
     title="Toggle dark mode"
+    aria-pressed="false"
 >
     🌙
 </button>
 
 
     <header class="header-section">
-        <h1>Writing & Email Helper</h1>
+        <h1>Writing &amp; Email Helper</h1>
         <p class="description">
             Write, check, count, and prepare your text for email.
         </p>
@@ -31,7 +47,6 @@
         <!-- Statistics -->
         <div class="stats-grid">
 
-      
             <div class="stat-box">
                 <div class="stat-value" id="wordCount">0</div>
                 <div class="stat-label">Words</div>
@@ -52,13 +67,10 @@
                 <div class="stat-label">Paragraphs</div>
             </div>
 
-
         </div>
 
-  
-
-
         <!-- Text Input -->
+        <label class="sr-only" for="textInput">Your message</label>
         <textarea
             id="textInput"
             placeholder="Start typing or paste your text here..."
@@ -79,54 +91,55 @@
             </button>
 
 
-		 <div class="emoji-toolbar">
-    <button
-        type="button"
-        id="emojiBtn"
-        class="emoji-btn"
-        aria-label="Insert emoji"
-    >
-        😊
-    </button>
+            <div class="emoji-toolbar" id="emojiToolbar">
+                <button
+                    type="button"
+                    id="emojiBtn"
+                    class="emoji-btn"
+                    aria-label="Insert emoji"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    aria-controls="emojiPicker"
+                >
+                    😊
+                </button>
 
-    <div
-        id="emojiPicker"
-        class="emoji-picker"
-        hidden
-    >
-        <button type="button" data-emoji="😀">😀</button>
-        <button type="button" data-emoji="👍">👍</button>
-        <button type="button" data-emoji="👋">👋</button>
-        <button type="button" data-emoji="😊">😊</button>
-        <button type="button" data-emoji="❤️">❤️</button>
-        <button type="button" data-emoji="🎉">🎉</button>
-        <button type="button" data-emoji="🙏">🙏</button>
-        <button type="button" data-emoji="✅">✅</button>
-        <button type="button" data-emoji="⭐">⭐</button>
-        <button type="button" data-emoji="🔥">🔥</button>
-        <button type="button" data-emoji="💡">💡</button>
-        <button type="button" data-emoji="📌">📌</button>
-        <button type="button" data-emoji="📎">📎</button>
-        <button type="button" data-emoji="📅">📅</button>
-        <button type="button" data-emoji="🚀">🚀</button>
-        <button type="button" data-emoji="⚠️">⚠️</button>
-    </div>
-</div>
-
-
-
+                <div
+                    id="emojiPicker"
+                    class="emoji-picker"
+                    role="group"
+                    aria-label="Emoji picker"
+                    hidden
+                >
+                    <button type="button" data-emoji="😀">😀</button>
+                    <button type="button" data-emoji="👍">👍</button>
+                    <button type="button" data-emoji="👋">👋</button>
+                    <button type="button" data-emoji="😊">😊</button>
+                    <button type="button" data-emoji="❤️">❤️</button>
+                    <button type="button" data-emoji="🎉">🎉</button>
+                    <button type="button" data-emoji="🙏">🙏</button>
+                    <button type="button" data-emoji="✅">✅</button>
+                    <button type="button" data-emoji="⭐">⭐</button>
+                    <button type="button" data-emoji="🔥">🔥</button>
+                    <button type="button" data-emoji="💡">💡</button>
+                    <button type="button" data-emoji="📌">📌</button>
+                    <button type="button" data-emoji="📎">📎</button>
+                    <button type="button" data-emoji="📅">📅</button>
+                    <button type="button" data-emoji="🚀">🚀</button>
+                    <button type="button" data-emoji="⚠️">⚠️</button>
+                </div>
+            </div>
 
         </div>
 
         <!-- Writing Check -->
         <section class="writing-check">
             <h2>
-    Writing Check
-    <span id="issueCount" class="issue-count"></span>
-</h2>
+                Writing Check
+                <span id="issueCount" class="issue-count"></span>
+            </h2>
 
-
-            <div id="checkResults" class="check-results">
+            <div id="checkResults" class="check-results" aria-live="polite">
                 <p class="check-empty">
                     Click "Check Writing" to check your text.
                 </p>
@@ -145,6 +158,7 @@
                     type="email"
                     id="emailTo"
                     placeholder="recipient@example.com"
+                    autocomplete="off"
                 >
 
                 <label for="emailSubject">Subject</label>
@@ -156,37 +170,37 @@
 
             </div>
 
-           <div class="email-preview">
-    <h3>Email Preview</h3>
+            <div class="email-preview">
+                <h3>Email Preview</h3>
 
-    <div class="email-preview-card">
+                <div class="email-preview-card">
 
-        <div class="email-ready-status" id="emailReadyStatus">
-    Ready to review
-</div>
+                    <div class="email-ready-status" id="emailReadyStatus">
+                        Ready to review
+                    </div>
 
-        <div class="preview-row">
-            <span class="preview-label">To</span>
-            <span id="previewTo" class="preview-value">—</span>
-        </div>
+                    <div class="preview-row">
+                        <span class="preview-label">To</span>
+                        <span id="previewTo" class="preview-value">—</span>
+                    </div>
 
-        <div class="preview-row">
-            <span class="preview-label">Subject</span>
-            <span id="previewSubject" class="preview-value">—</span>
-        </div>
+                    <div class="preview-row">
+                        <span class="preview-label">Subject</span>
+                        <span id="previewSubject" class="preview-value">—</span>
+                    </div>
 
-        <div class="preview-body">
-            <span class="preview-label">Message</span>
-            <p id="previewBody">Your message will appear here.</p>
-        </div>
-    </div>
-</div>
+                    <div class="preview-body">
+                        <span class="preview-label">Message</span>
+                        <p id="previewBody">Your message will appear here.</p>
+                    </div>
+                </div>
+            </div>
 
-       <p id="emailStatus" class="email-status" aria-live="polite"></p>
-    
-<button class="btn-secondary" id="copyEmailBtn" type="button">
-    Copy Email
-</button>
+            <p id="emailStatus" class="email-status" aria-live="polite"></p>
+
+            <button class="btn-secondary" id="copyEmailBtn" type="button">
+                Copy Email
+            </button>
             <button class="btn-email" id="emailBtn" type="button">
                 Open in Email
             </button>

@@ -1,17 +1,24 @@
 :root {
-    --primary-color: #007bff;
+    --primary-color: #0069d9;
     --bg-color: #f8f9fa;
     --text-dark: #202124;
     --text-muted: #5f6368;
     --border-color: #dadce0;
     --panel-bg: #ffffff;
 
-    --success-color: #188038;
-    --warning-color: #b06000;
+    --success-color: #146c2f;
+    --warning-color: #9a5700;
     --error-color: #d93025;
+
+    /* Text drawn on top of --primary-color. */
+    --on-primary: #ffffff;
+
+    /* Surfaces that sit on top of the panel (fix previews, emoji picker). */
+    --raised-bg: #ffffff;
+    --raised-bg-hover: #eaf3ff;
 }
 
-body.dark-theme {
+html.dark-theme {
     --primary-color: #5aa9ff;
 
     --bg-color: #151a21;
@@ -23,6 +30,12 @@ body.dark-theme {
     --success-color: #5fd18a;
     --warning-color: #f0b35a;
     --error-color: #ff7167;
+
+    /* The dark theme's primary is a light blue, so text on it must be dark. */
+    --on-primary: #0d1520;
+
+    --raised-bg: #2b323d;
+    --raised-bg-hover: #37404f;
 }
 
 
@@ -78,14 +91,8 @@ p.description {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* =========================
-   Statistics
-========================= */
-
-/* =========================
-   Compact Statistics
-========================= */
-
+/* Statistics */
+/* Compact Statistics */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -118,19 +125,26 @@ p.description {
     font-weight: 600;
 }
 
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
+/* Visually Hidden */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
 
-/* =========================
-   Text Area
-========================= */
+/* Focus */
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
 
+/* Text Area */
 textarea {
     width: 100%;
     height: 250px;
@@ -157,10 +171,7 @@ textarea:focus {
     border-color: var(--primary-color);
 }
 
-/* =========================
-   Buttons
-========================= */
-
+/* Buttons */
 .controls {
     display: flex;
     gap: 12px;
@@ -189,7 +200,7 @@ button:active {
 
 .btn-primary {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--on-primary);
 }
 
 .btn-primary:hover {
@@ -215,10 +226,7 @@ button:active {
     background-color: #137333;
 }
 
-/* =========================
-   Writing Check
-========================= */
-
+/* Writing Check */
 .writing-check,
 .email-section {
     margin-top: 30px;
@@ -269,10 +277,13 @@ h2 {
     color: var(--error-color);
 }
 
-/* =========================
-   Email
-========================= */
+.check-item.info {
+    border-left-color: var(--border-color);
+    color: var(--text-muted);
+    font-style: italic;
+}
 
+/* Email */
 .email-fields {
     display: grid;
     grid-template-columns: 80px 1fr;
@@ -306,10 +317,11 @@ h2 {
     border-color: var(--primary-color);
 }
 
-/* =========================
-   Mobile
-========================= */
+.email-fields input[aria-invalid="true"] {
+    border-color: var(--error-color);
+}
 
+/* Mobile */
 @media (max-width: 600px) {
 
     body {
@@ -318,6 +330,9 @@ h2 {
 
     .header-section {
         margin-bottom: 14px;
+
+        /* Keeps the centred title clear of the fixed theme button. */
+        padding-inline: 34px;
     }
 
     h1 {
@@ -390,10 +405,7 @@ h2 {
 
 
 
-/* =========================
-   Writing Check Actions
-========================= */
-
+/* Writing Check Actions */
 .check-item {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -421,7 +433,7 @@ h2 {
 
     padding: 6px 12px;
 
-    background-color: #ffffff;
+    background-color: var(--raised-bg);
     color: var(--primary-color);
 
     border: 1px solid var(--primary-color);
@@ -434,7 +446,7 @@ h2 {
 }
 
 .fix-btn:hover {
-    background-color: #eaf3ff;
+    background-color: var(--raised-bg-hover);
 }
 
 .check-actions {
@@ -445,7 +457,7 @@ h2 {
 
 .fix-all-btn {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--on-primary);
 }
 
 .fix-all-btn:hover {
@@ -467,7 +479,7 @@ h2 {
     margin-top: 10px;
     padding: 10px 12px;
 
-    background-color: #ffffff;
+    background-color: var(--raised-bg);
 
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -495,7 +507,7 @@ h2 {
 }
 
 .fix-preview div:first-child {
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 .fix-preview div:last-child {
@@ -504,14 +516,13 @@ h2 {
 
 
 .undo-btn {
-    background-color: #f1f3f4;
+    background-color: var(--bg-color);
     color: var(--text-dark);
     border: 1px solid var(--border-color);
 }
 
 .undo-btn:hover {
-    background-color: #e2e5e8;
-    color: var(--text-dark);
+    background-color: var(--raised-bg-hover);
 }
 
 
@@ -522,10 +533,7 @@ h2 {
     margin-left: 8px;
 }
 
-/* =========================
-   Compact Mobile Lower Sections
-========================= */
-
+/* Compact Mobile Lower Sections */
 @media (max-width: 600px) {
 
     .writing-check,
@@ -598,10 +606,7 @@ h2 {
 }
 
 
-/* =========================
-   Email Preview
-========================= */
-
+/* Email Preview */
 .email-preview {
     margin-top: 18px;
     margin-bottom: 18px;
@@ -696,13 +701,18 @@ h2 {
     margin-bottom: 10px;
     padding: 4px 8px;
 
-    background-color: #eaf3ff;
+    background-color: var(--raised-bg);
     color: var(--primary-color);
 
     border-radius: 5px;
 
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+.email-ready-status.ready {
+    background-color: var(--raised-bg-hover);
+    color: var(--success-color);
 }
 
 
@@ -723,6 +733,10 @@ h2 {
     font-size: 0.85rem;
     color: var(--error-color);
     font-weight: 600;
+}
+
+.email-status.success {
+    color: var(--success-color);
 }
 
 
@@ -751,10 +765,7 @@ h2 {
     background-color: #5a6268;
 }
 
-/* =========================
-   Emoji Toolbar
-========================= */
-
+/* Emoji Toolbar */
 .emoji-toolbar {
     position: relative;
     display: flex;
@@ -777,7 +788,7 @@ h2 {
 }
 
 .emoji-btn:hover {
-    background-color: #eaf3ff;
+    background-color: var(--raised-bg-hover);
 }
 
 
@@ -797,7 +808,7 @@ h2 {
     top: calc(100% + 5px);
     right: 0;
 
-    background-color: #ffffff;
+    background-color: var(--raised-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
 
@@ -893,10 +904,6 @@ h2 {
         padding: 8px 0;
         font-size: 0.9rem;
     }
-}
-
-
-@media (max-width: 389px) {
 
     .emoji-picker {
         width: min(250px, calc(100vw - 30px));
@@ -924,15 +931,7 @@ h2 {
     }
 }
 
-
-/* =========================
-   Larger Screens
-========================= */
-
-/* =========================
-   Larger Screens
-========================= */
-
+/* Larger Screens */
 @media (min-width: 901px) {
 
     body {
@@ -978,19 +977,6 @@ h2 {
     .controls {
         gap: 8px;
     }
-}
-
-
-/* =========================
-   Desktop Viewport Density
-========================= */
-
-
-/* =========================
-   Compact Desktop View
-========================= */
-
-@media (min-width: 901px) {
 
     body {
         padding-top: 14px;
