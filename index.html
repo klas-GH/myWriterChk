@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing & Email Helper</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<button
+    type="button"
+    id="themeToggle"
+    class="theme-toggle"
+    aria-label="Toggle dark mode"
+    title="Toggle dark mode"
+>
+    🌙
+</button>
+
+
+    <header class="header-section">
+        <h1>Writing & Email Helper</h1>
+        <p class="description">
+            Write, check, count, and prepare your text for email.
+        </p>
+    </header>
+
+    <main class="tool-container">
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+
+      
+            <div class="stat-box">
+                <div class="stat-value" id="wordCount">0</div>
+                <div class="stat-label">Words</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-value" id="charCount">0</div>
+                <div class="stat-label">Characters</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-value" id="sentenceCount">0</div>
+                <div class="stat-label">Sentences</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-value" id="paragraphCount">0</div>
+                <div class="stat-label">Paragraphs</div>
+            </div>
+
+
+        </div>
+
+  
+
+
+        <!-- Text Input -->
+        <textarea
+            id="textInput"
+            placeholder="Start typing or paste your text here..."
+        ></textarea>
+
+        <!-- Main Actions -->
+        <div class="controls">
+            <button class="btn-primary" id="copyBtn" type="button">
+                Copy Text
+            </button>
+
+            <button class="btn-secondary" id="checkBtn" type="button">
+                Check Writing
+            </button>
+
+            <button class="btn-secondary" id="clearBtn" type="button">
+                Clear
+            </button>
+
+
+		 <div class="emoji-toolbar">
+    <button
+        type="button"
+        id="emojiBtn"
+        class="emoji-btn"
+        aria-label="Insert emoji"
+    >
+        😊
+    </button>
+
+    <div
+        id="emojiPicker"
+        class="emoji-picker"
+        hidden
+    >
+        <button type="button" data-emoji="😀">😀</button>
+        <button type="button" data-emoji="👍">👍</button>
+        <button type="button" data-emoji="👋">👋</button>
+        <button type="button" data-emoji="😊">😊</button>
+        <button type="button" data-emoji="❤️">❤️</button>
+        <button type="button" data-emoji="🎉">🎉</button>
+        <button type="button" data-emoji="🙏">🙏</button>
+        <button type="button" data-emoji="✅">✅</button>
+        <button type="button" data-emoji="⭐">⭐</button>
+        <button type="button" data-emoji="🔥">🔥</button>
+        <button type="button" data-emoji="💡">💡</button>
+        <button type="button" data-emoji="📌">📌</button>
+        <button type="button" data-emoji="📎">📎</button>
+        <button type="button" data-emoji="📅">📅</button>
+        <button type="button" data-emoji="🚀">🚀</button>
+        <button type="button" data-emoji="⚠️">⚠️</button>
+    </div>
+</div>
+
+
+
+
+        </div>
+
+        <!-- Writing Check -->
+        <section class="writing-check">
+            <h2>
+    Writing Check
+    <span id="issueCount" class="issue-count"></span>
+</h2>
+
+
+            <div id="checkResults" class="check-results">
+                <p class="check-empty">
+                    Click "Check Writing" to check your text.
+                </p>
+            </div>
+        </section>
+
+        <!-- Email Section -->
+        <section class="email-section">
+
+            <h2>Email</h2>
+
+            <div class="email-fields">
+
+                <label for="emailTo">To</label>
+                <input
+                    type="email"
+                    id="emailTo"
+                    placeholder="recipient@example.com"
+                >
+
+                <label for="emailSubject">Subject</label>
+                <input
+                    type="text"
+                    id="emailSubject"
+                    placeholder="Email subject"
+                >
+
+            </div>
+
+           <div class="email-preview">
+    <h3>Email Preview</h3>
+
+    <div class="email-preview-card">
+
+        <div class="email-ready-status" id="emailReadyStatus">
+    Ready to review
+</div>
+
+        <div class="preview-row">
+            <span class="preview-label">To</span>
+            <span id="previewTo" class="preview-value">—</span>
+        </div>
+
+        <div class="preview-row">
+            <span class="preview-label">Subject</span>
+            <span id="previewSubject" class="preview-value">—</span>
+        </div>
+
+        <div class="preview-body">
+            <span class="preview-label">Message</span>
+            <p id="previewBody">Your message will appear here.</p>
+        </div>
+    </div>
+</div>
+
+       <p id="emailStatus" class="email-status" aria-live="polite"></p>
+    
+<button class="btn-secondary" id="copyEmailBtn" type="button">
+    Copy Email
+</button>
+            <button class="btn-email" id="emailBtn" type="button">
+                Open in Email
+            </button>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
