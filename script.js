@@ -1436,3 +1436,13 @@ document.addEventListener('keydown', event => {
 loadDraft();
 updateStatistics();
 updateEmailPreview();
+
+// Offline support. Unavailable on file:// and where the user (or a
+// policy) blocks service workers, so it is purely additive.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {
+            // Offline support unavailable; the app works online.
+        });
+    });
+}

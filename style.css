@@ -16,6 +16,9 @@
     /* Surfaces that sit on top of the panel (fix previews, emoji picker). */
     --raised-bg: #ffffff;
     --raised-bg-hover: #eaf3ff;
+
+    /* Native widgets (form fields, scrollbars) follow the light theme. */
+    color-scheme: light;
 }
 
 html.dark-theme {
@@ -36,6 +39,8 @@ html.dark-theme {
 
     --raised-bg: #2b323d;
     --raised-bg-hover: #37404f;
+
+    color-scheme: dark;
 }
 
 

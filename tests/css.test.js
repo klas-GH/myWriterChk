@@ -2,7 +2,9 @@
 // need a DOM: they guard the contracts between the three files, and the
 // accessibility and contrast rules that are easy to regress by hand.
 
-const { readApp } = require('./harness');
+const fs = require('fs');
+const path = require('path');
+const { readApp, ROOT } = require('./harness');
 
 // ------------------------------------------------------------ colour helpers
 
@@ -40,6 +42,42 @@ function variablesIn(css, selectorPattern) {
         if (match) vars[match[1]] = match[2].trim();
     });
     return vars;
+}
+
+// Reads an image's declared dimensions without decoding the pixels.
+function imageSize(buffer) {
+    if (buffer.slice(0, 8).toString('hex') === '89504e470d0a1a0a') {
+        return {
+            type: 'png',
+            width: buffer.readUInt32BE(16),
+            height: buffer.readUInt32BE(20)
+        };
+    }
+    const text = buffer.toString('utf8');
+    const svg = /<svg\b[^>]*\swidth="(\d+)(?:px)?"[^>]*\sheight="(\d+)(?:px)?"/.exec(text);
+    if (svg) return { type: 'svg', width: Number(svg[1]), height: Number(svg[2]) };
+    return { type: 'unknown', width: 0, height: 0 };
+}
+
+// Inflates a PNG's pixel data so alpha can be checked directly.
+function pngPixels(buffer) {
+    const zlib = require('zlib');
+    let offset = 8;
+    let width = 0;
+    let height = 0;
+    const compressed = [];
+    while (offset < buffer.length) {
+        const length = buffer.readUInt32BE(offset);
+        const type = buffer.slice(offset + 4, offset + 8).toString('ascii');
+        if (type === 'IHDR') {
+            width = buffer.readUInt32BE(offset + 8);
+            height = buffer.readUInt32BE(offset + 12);
+        }
+        if (type === 'IDAT') compressed.push(buffer.slice(offset + 8, offset + 8 + length));
+        offset += length + 12;
+    }
+    const raw = zlib.inflateSync(Buffer.concat(compressed));
+    return { width, height, raw };
 }
 
 module.exports = function css(t) {
@@ -281,4 +319,129 @@ module.exports = function css(t) {
     t.eq('no console logging left behind', /console\.(log|debug|warn)\(/.test(script), false);
     t.eq('no debugger statement', /\bdebugger\b/.test(script), false);
     t.eq('no TODO or FIXME left behind', /TODO|FIXME|XXX/.test(script), false);
+
+    // ---------------------------------------------------------------------
+    t.section('installable app (PWA)');
+
+    let manifest = null;
+    let manifestError = null;
+    try {
+        manifest = JSON.parse(readApp('manifest.webmanifest'));
+    } catch (error) {
+        manifestError = error.message;
+    }
+    t.eq('manifest.webmanifest is valid JSON', manifestError, null);
+
+    if (manifest) {
+        ['name', 'short_name', 'start_url', 'display',
+            'background_color', 'theme_color', 'icons'
+        ].forEach(field => {
+            t.ok('manifest has ' + field, manifest[field] !== undefined);
+        });
+
+        t.eq('short_name fits an app label',
+            manifest.short_name.length <= 20, true);
+        t.eq('installs as a standalone app', manifest.display, 'standalone');
+        t.eq('scope covers the app root', manifest.scope, '.');
+        t.eq('background matches the light theme surface',
+            manifest.background_color, variablesIn(css, ':root')['--bg-color']);
+        t.eq('theme matches the primary colour',
+            manifest.theme_color, variablesIn(css, ':root')['--primary-color']);
+        t.ok('icons are declared', Array.isArray(manifest.icons) && manifest.icons.length > 0);
+
+        const icons = manifest.icons;
+        t.ok('a 192px icon is offered',
+            icons.some(icon => String(icon.sizes).includes('192')));
+        t.ok('a 512px icon is offered',
+            icons.some(icon => String(icon.sizes).includes('512')));
+        t.ok('both maskable and ordinary icons are offered',
+            ['any', 'maskable'].every(purpose =>
+                icons.some(icon =>
+                    (icon.purpose || 'any').split(/\s+/).includes(purpose))));
+        t.ok('a vector icon is offered for crisp scaling',
+            icons.some(icon => icon.sizes === 'any'));
+
+        icons.forEach(icon => {
+            const file = path.join(ROOT, icon.src);
+            const exists = fs.existsSync(file);
+            t.ok('icon exists: ' + icon.src, exists);
+            if (!exists) return;
+
+            const buffer = fs.readFileSync(file);
+            const size = imageSize(buffer);
+            t.eq(icon.src + ' is a known image type', size.type === 'unknown', false);
+
+            if (size.type === 'png') {
+                const [width, height] = String(icon.sizes).split('x').map(Number);
+                t.eq(icon.src + ' matches its declared size',
+                    [size.width, size.height], [width, height]);
+            } else {
+                t.ok(icon.src + ' is a real SVG',
+                    buffer.toString('utf8').trimStart().startsWith('<svg'));
+            }
+        });
+
+        // A maskable icon must fill its canvas, or the adaptive-icon
+        // mask clips the corners off the artwork.
+        const maskables = icons.filter(icon =>
+            (icon.purpose || '').includes('maskable') &&
+            icon.src.endsWith('.png') &&
+            fs.existsSync(path.join(ROOT, icon.src)));
+        maskables.forEach(icon => {
+            const buffer = fs.readFileSync(path.join(ROOT, icon.src));
+            const { width, height, raw } = pngPixels(buffer);
+            const stride = width * 4;
+            const alphaAt = (x, y) => raw[y * (stride + 1) + 1 + x * 4 + 3];
+            const edges = [
+                alphaAt(0, 0), alphaAt(width - 1, 0),
+                alphaAt(0, height - 1), alphaAt(width - 1, height - 1),
+                alphaAt(Math.floor(width / 2), 0),
+                alphaAt(0, Math.floor(height / 2))
+            ];
+            t.ok(icon.src + ' is fully opaque, so the mask cannot clip it',
+                edges.every(alpha => alpha === 255));
+        });
+    }
+
+    t.eq('index.html links the manifest',
+        /<link rel="manifest" href="manifest\.webmanifest">/.test(html), true);
+    t.ok('index.html declares a theme colour',
+        /<meta name="theme-color" content="#[0-9a-f]{6}">/i.test(html));
+    t.eq('and it agrees with the manifest', (() => {
+        const meta = /<meta name="theme-color" content="(#[0-9a-f]{6})"/i.exec(html);
+        return meta ? meta[1].toLowerCase() : '';
+    })(), manifest ? manifest.theme_color.toLowerCase() : '');
+    t.ok('an apple touch icon is declared',
+        /<link rel="apple-touch-icon" href="[^"]+">/.test(html));
+    t.ok('a favicon is declared', /<link rel="icon" href="[^"]+"/.test(html));
+
+    t.ok('script.js registers the service worker',
+        /navigator\.serviceWorker\.register\('sw\.js'\)/.test(script));
+    t.ok('registration is guarded so file:// still works',
+        /if \('serviceWorker' in navigator\)/.test(script));
+    t.ok('a registration failure is caught',
+        /register\('sw\.js'\)\.catch\(/.test(script));
+
+    t.ok('sw.js caches the app shell on install',
+        /addEventListener\('install'[\s\S]*?cache\.addAll/.test(readApp('sw.js')));
+    t.ok('sw.js claims clients on activate',
+        /addEventListener\('activate'[\s\S]*?clients\.claim/.test(readApp('sw.js')));
+    t.ok('sw.js serves from the cache first',
+        /addEventListener\('fetch'[\s\S]*?caches\.match/.test(readApp('sw.js')));
+    t.ok('sw.js falls back to the shell offline',
+        /caches\.match\('index\.html'\)/.test(readApp('sw.js')));
+    t.ok('sw.js bumps a cache version', /const CACHE = '[^']*v\d+/.test(readApp('sw.js')));
+
+    t.ok('every shell file the worker caches exists',
+        readApp('sw.js')
+            .match(/SHELL = \[([\s\S]*?)\]/)[1]
+            .match(/'([^']+)'/g)
+            .map(entry => entry.slice(1, -1))
+            .filter(entry => entry !== '.')
+            .filter(entry => !fs.existsSync(path.join(ROOT, entry))));
+
+    t.ok('light theme declares its colour scheme',
+        /:root\s*\{[^}]*color-scheme:\s*light/.test(stripped));
+    t.ok('dark theme declares its colour scheme',
+        /html\.dark-theme\s*\{[^}]*color-scheme:\s*dark/.test(stripped));
 };

@@ -1,5 +1,5 @@
 # Local artifacts, not part of the project
-app1.zip
+app*.zip
 app_report.txt
 .kilo/
 
