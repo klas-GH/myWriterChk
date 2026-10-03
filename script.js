@@ -17,6 +17,12 @@ const MAILTO_MAX_LENGTH = 1800;
 const DRAFT_SAVE_DELAY = 300;
 const LONG_SENTENCE_WORDS = 30;
 
+// Shown in the bottom-left corner as vMAJOR.MINOR. Bump the major
+// part for breaking changes (2.0.0 shows "v2.0") and the minor part
+// for features and fixes (1.1.0 shows "v1.1"). Keep in sync with the
+// "version" field in package.json.
+const APP_VERSION = '1.0.0';
+
 const EMAIL_PATTERN = /^[^\s@,;:<>()[\]\\"]+@[^\s@,;:<>()[\]\\"]+\.[A-Za-z]{2,}$/;
 
 // Words that are legitimately lowercase after a comma. Anything not in this
@@ -99,6 +105,8 @@ const emojiToolbar = document.getElementById('emojiToolbar');
 const emojiPicker = document.getElementById('emojiPicker');
 
 const themeToggle = document.getElementById('themeToggle');
+
+const appVersionDisplay = document.getElementById('appVersion');
 
 const undoStack = [];
 
@@ -1430,12 +1438,23 @@ document.addEventListener('keydown', event => {
 
 
 // =========================
+// VERSION
+// =========================
+
+function updateVersionDisplay() {
+    const [major, minor] = APP_VERSION.split('.');
+    appVersionDisplay.textContent = `v${major}.${minor}`;
+}
+
+
+// =========================
 // INIT
 // =========================
 
 loadDraft();
 updateStatistics();
 updateEmailPreview();
+updateVersionDisplay();
 
 // Offline support. Unavailable on file:// and where the user (or a
 // policy) blocks service workers, so it is purely additive.

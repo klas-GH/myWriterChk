@@ -1183,6 +1183,22 @@ h2 {
     background-color: var(--bg-color);
 }
 
+/* Version badge, bottom-left corner. */
+.app-version {
+    position: fixed;
+    left: 16px;
+    bottom: 12px;
+
+    z-index: 1;
+
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+
+    user-select: none;
+}
+
 
 @media (max-width: 600px) {
 
@@ -1194,6 +1210,13 @@ h2 {
         height: 34px;
 
         font-size: 0.9rem;
+    }
+
+    .app-version {
+        left: 10px;
+        bottom: 8px;
+
+        font-size: 0.68rem;
     }
 }
 
