@@ -1,7 +1,0 @@
-# Local artifacts, not part of the project
-app*.zip
-app_report.txt
-.kilo/
-
-# No dependencies, but never commit a stray install
-node_modules/
