@@ -208,11 +208,6 @@ function getTokenAt(text, index) {
     return { start, end, value: text.slice(start, end) };
 }
 
-function linePreview(text, index, transform) {
-    const before = getLine(text, index);
-    return { before, after: transform(before) };
-}
-
 function linePreviewForWord(text, index, word, replacement) {
     const line = getLine(text, index);
     const lineStart = text.lastIndexOf('\n', index - 1) + 1;
@@ -354,6 +349,33 @@ function fixSpecificRepeatedPunctuationAt(start, length) {
         text.slice(start + length);
 }
 
+function replaceRepeatedWordAtLineIndex(line, index, length, word) {
+    return (
+        line.slice(0, index) +
+        word +
+        line.slice(index + length)
+    );
+}
+
+function fixSpecificRepeatedWordAt(start, length, word) {
+    const text = textInput.value;
+    const original = text.slice(start, start + length);
+
+    // Make sure this exact repeated-word occurrence still exists.
+    const pattern = new RegExp(
+        `^${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        'i'
+    );
+
+    if (!pattern.test(original)) {
+        return;
+    }
+
+    textInput.value =
+        text.slice(0, start) +
+        word +
+        text.slice(start + length);
+}
 
 
 // =========================
@@ -748,11 +770,26 @@ function collectRepeatedWords(text, issues, addFixable) {
         total++;
         if (total > MAX_ISSUES_PER_RULE) break;
 
+        const start = match.index;
+        const length = match[0].length;
+
         issues.push({
             severity: 'warning',
-            message: `Repeated word: "${truncate(getLine(text, match.index))}"`,
-            preview: linePreview(text, match.index, removeRepeatedWords),
-            fix: fixRepeatedWords,
+            message: `Repeated word: "${truncate(getLine(text, start))}"`,
+
+            preview: {
+                before: getLine(text, start),
+                after: replaceRepeatedWordAtLineIndex(
+                    getLine(text, start),
+                    start - (text.lastIndexOf('\n', start - 1) + 1),
+                    length,
+                    word
+                )
+            },
+
+            // Remember THIS exact occurrence.
+            fix: () => fixSpecificRepeatedWordAt(start, length, word),
+
             fixKey: 'repeatedWords'
         });
     }
@@ -762,6 +799,7 @@ function collectRepeatedWords(text, issues, addFixable) {
         pushOverflow(issues, total, 'repeated word');
     }
 }
+
 
 
 function collectSentenceCapitalization(text, issues, addFixable) {
