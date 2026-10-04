@@ -303,6 +303,58 @@ function fixSpecificMissingSpaceAt(index) {
         text.slice(index + 1);
 }
 
+function replaceRepeatedPunctuationAtLineIndex(line, index, length) {
+    const punctuation = line.slice(index, index + length);
+
+    let replacement = punctuation;
+
+    if (/^!+$/.test(punctuation)) {
+        replacement = '!';
+    } else if (/^\?+$/.test(punctuation)) {
+        replacement = '?';
+    } else if (/^\.+$/.test(punctuation)) {
+        replacement = '...';
+    }
+
+    return (
+        line.slice(0, index) +
+        replacement +
+        line.slice(index + length)
+    );
+}
+
+function fixSpecificRepeatedPunctuationAt(start, length) {
+    const text = textInput.value;
+    const original = text.slice(start, start + length);
+
+    // Make sure the original repeated punctuation still exists
+    // at this exact position.
+    if (
+        !/^!{2,}$/.test(original) &&
+        !/^\?{2,}$/.test(original) &&
+        !/^\.+$/.test(original)
+    ) {
+        return;
+    }
+
+
+    let replacement;
+
+    if (/^!+$/.test(original)) {
+        replacement = '!';
+    } else if (/^\?+$/.test(original)) {
+        replacement = '?';
+    } else {
+        replacement = '...';
+    }
+
+    textInput.value =
+        text.slice(0, start) +
+        replacement +
+        text.slice(start + length);
+}
+
+
 
 // =========================
 // PUNCTUATION SAFETY
@@ -643,7 +695,6 @@ function collectMissingSpaces(text, issues, addFixable) {
     }
 }
 
-
 function collectRepeatedPunctuation(text, issues, addFixable) {
     const pattern = /!{2,}|\?{2,}|\.{4,}/g;
     let total = 0;
@@ -653,11 +704,25 @@ function collectRepeatedPunctuation(text, issues, addFixable) {
         total++;
         if (total > MAX_ISSUES_PER_RULE) break;
 
+        const start = match.index;
+        const length = match[0].length;
+
         issues.push({
             severity: 'warning',
-            message: `Repeated punctuation: "${truncate(getLine(text, match.index))}"`,
-            preview: linePreview(text, match.index, collapseRepeatedPunctuation),
-            fix: fixRepeatedPunctuation,
+            message: `Repeated punctuation: "${truncate(getLine(text, start))}"`,
+
+            preview: {
+                before: getLine(text, start),
+                after: replaceRepeatedPunctuationAtLineIndex(
+                    getLine(text, start),
+                    start - (text.lastIndexOf('\n', start - 1) + 1),
+                    length
+                )
+            },
+
+            // Remember THIS exact occurrence.
+            fix: () => fixSpecificRepeatedPunctuationAt(start, length),
+
             fixKey: 'repeatedPunctuation'
         });
     }
@@ -667,6 +732,7 @@ function collectRepeatedPunctuation(text, issues, addFixable) {
         pushOverflow(issues, total, 'repeated punctuation');
     }
 }
+
 
 function collectRepeatedWords(text, issues, addFixable) {
     const pattern = /\b([\p{L}']+)\s+\1\b/giu;
