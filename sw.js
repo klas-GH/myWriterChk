@@ -5,7 +5,7 @@
 // is same-origin static content, so there is nothing to stale-proof
 // beyond a cache version bump.
 
-const CACHE = 'writer-helper-v1';
+const CACHE = 'writer-helper-v2';
 
 const SHELL = [
     '.',

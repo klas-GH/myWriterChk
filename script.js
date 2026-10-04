@@ -21,7 +21,7 @@ const LONG_SENTENCE_WORDS = 30;
 // part for breaking changes (2.0.0 shows "v2.0") and the minor part
 // for features and fixes (1.1.0 shows "v1.1"). Keep in sync with the
 // "version" field in package.json.
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.2.0';
 
 const EMAIL_PATTERN = /^[^\s@,;:<>()[\]\\"]+@[^\s@,;:<>()[\]\\"]+\.[A-Za-z]{2,}$/;
 
