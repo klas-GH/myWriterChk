@@ -148,10 +148,6 @@ updateThemeButton();
 // TEXT HELPERS
 // =========================
 
-function escapeRegExp(value) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function isLetter(character) {
     return typeof character === 'string' && /[\p{L}]/u.test(character);
 }
@@ -219,13 +215,21 @@ function linePreview(text, index, transform) {
 
 function linePreviewForWord(text, index, word, replacement) {
     const line = getLine(text, index);
-    const escaped = escapeRegExp(word);
+    const lineStart = text.lastIndexOf('\n', index - 1) + 1;
+    const lineIndex = index - lineStart;
     return {
         before: line,
-        after: line.replace(new RegExp(escaped), replacement)
+        after: replaceWordAtIndex(line, lineIndex, word, replacement)
     };
 }
 
+function replaceWordAtIndex(text, index, word, replacement) {
+    return (
+        text.slice(0, index) +
+        replacement +
+        text.slice(index + word.length)
+    );
+}
 
 // =========================
 // PUNCTUATION SAFETY
@@ -586,6 +590,7 @@ function collectRepeatedWords(text, issues, addFixable) {
     }
 }
 
+
 function collectSentenceCapitalization(text, issues, addFixable) {
     const pattern = /(^[ \t]*|[.!?]["')\]]?[ \t]+)([\p{Ll}][\p{L}']*)/gmu;
     let total = 0;
@@ -605,17 +610,29 @@ function collectSentenceCapitalization(text, issues, addFixable) {
         total++;
         if (total > MAX_ISSUES_PER_RULE) break;
 
+        const line = getLine(text, wordStart);
+
+        // Position of the word inside its line.
+        const lineStart = text.lastIndexOf('\n', wordStart - 1) + 1;
+        const lineIndex = wordStart - lineStart;
+
+        const after =
+            line.slice(0, lineIndex) +
+            capitalize(word) +
+            line.slice(lineIndex + word.length);
+
         issues.push({
             severity: 'warning',
             message: `"${word}" should probably start with a capital letter.`,
+
             preview: {
-                before: getLine(text, wordStart),
-                after: getLine(text, wordStart).replace(
-                    new RegExp(escapeRegExp(word)),
-                    capitalize(word)
-                )
+                before: line,
+                after
             },
-            fix: () => fixSpecificSentenceWord(word),
+
+            // Store THIS occurrence's exact position.
+            fix: () => fixSpecificSentenceWordAt(word, wordStart),
+
             fixKey: 'sentenceCapitalization'
         });
     }
@@ -625,6 +642,7 @@ function collectSentenceCapitalization(text, issues, addFixable) {
         pushOverflow(issues, total, 'capitalization');
     }
 }
+
 
 function collectCommaCapitalization(text, issues, addFixable) {
     const pattern = /,\s+(\p{Lu}\p{Ll}+)/gu;
@@ -648,7 +666,7 @@ function collectCommaCapitalization(text, issues, addFixable) {
             severity: 'warning',
             message: `"${word}" after a comma should probably be lowercase.`,
             preview: linePreviewForWord(text, wordStart, word, word.toLowerCase()),
-            fix: () => fixSpecificCommaWord(word),
+            fix: () => fixSpecificCommaWordAt(wordStart, word),
             fixKey: 'commaCapitalization'
         });
     }
@@ -1024,20 +1042,13 @@ function fixSentenceCapitalization() {
     );
 }
 
-function fixSpecificSentenceWord(word) {
+function fixSpecificSentenceWordAt(word, start) {
     const text = textInput.value;
 
-    const pattern = new RegExp(
-        `(^[ \\t]*|[.!?]["')\\]]?[ \\t]+)${escapeRegExp(word)}\\b`,
-        'gm'
-    );
-
-    const match = pattern.exec(text);
-    if (!match) return;
-
-    const start = match.index + match[0].length - word.length;
-
-    if (isAcronymWord(text, start, start + word.length)) return;
+    // Safety check: don't modify a different word if the text changed.
+    if (text.slice(start, start + word.length) !== word) {
+        return;
+    }
 
     textInput.value =
         text.slice(0, start) +
@@ -1045,26 +1056,24 @@ function fixSpecificSentenceWord(word) {
         text.slice(start + word.length);
 }
 
-function findCommaWordIndex(text, word) {
-    const pattern = new RegExp(`,\\s+${escapeRegExp(word)}\\b`);
 
-    const match = pattern.exec(text);
-    if (!match) return -1;
 
-    return match.index + match[0].length - word.length;
-}
 
-function fixSpecificCommaWord(word) {
+function fixSpecificCommaWordAt(start, word) {
     const text = textInput.value;
 
-    const start = findCommaWordIndex(text, word);
-    if (start === -1) return;
+    // Make sure the stored location still contains the
+    // word that was originally detected.
+    if (text.slice(start, start + word.length) !== word) {
+        return;
+    }
 
     textInput.value =
         text.slice(0, start) +
         word.toLowerCase() +
         text.slice(start + word.length);
 }
+
 
 // Only lowercases words that are known to be wrong after a comma.
 function fixAllCommaCapitalization() {
