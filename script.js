@@ -276,6 +276,34 @@ function fixSpecificSpaceBeforePunctuation(start, length) {
         text.slice(start + length);
 }
 
+function replaceMissingSpaceAtLineIndex(line, index) {
+    return (
+        line.slice(0, index + 1) +
+        ' ' +
+        line.slice(index + 1)
+    );
+}
+
+function fixSpecificMissingSpaceAt(index) {
+    const text = textInput.value;
+
+    // Make sure the original punctuation is still at this position
+    // and is still followed immediately by a letter.
+    if (
+        !SPACE_AFTER_PATTERN.test(text[index]) ||
+        !isLetter(text[index + 1]) ||
+        /\s/.test(text[index - 1] || '')
+    ) {
+        return;
+    }
+
+    textInput.value =
+        text.slice(0, index + 1) +
+        ' ' +
+        text.slice(index + 1);
+}
+
+
 // =========================
 // PUNCTUATION SAFETY
 // =========================
@@ -589,11 +617,22 @@ function collectMissingSpaces(text, issues, addFixable) {
     const total = indexes.length;
 
     indexes.slice(0, MAX_ISSUES_PER_RULE).forEach(index => {
+
         issues.push({
             severity: 'warning',
             message: `Missing space after "${text[index]}": "${truncate(getLine(text, index))}"`,
-            preview: linePreview(text, index, addMissingSpacesInLine),
-            fix: fixMissingSpaceAfterPunctuation,
+
+            preview: {
+                before: getLine(text, index),
+                after: replaceMissingSpaceAtLineIndex(
+                    getLine(text, index),
+                    index - (text.lastIndexOf('\n', index - 1) + 1)
+                )
+            },
+
+            // Remember THIS exact occurrence.
+            fix: () => fixSpecificMissingSpaceAt(index),
+
             fixKey: 'missingSpace'
         });
     });
@@ -603,6 +642,7 @@ function collectMissingSpaces(text, issues, addFixable) {
         pushOverflow(issues, total, 'missing space');
     }
 }
+
 
 function collectRepeatedPunctuation(text, issues, addFixable) {
     const pattern = /!{2,}|\?{2,}|\.{4,}/g;
