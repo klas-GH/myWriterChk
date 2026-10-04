@@ -108,11 +108,21 @@ const emojiPicker = document.getElementById('emojiPicker');
 
 const themeToggle = document.getElementById('themeToggle');
 
+const confirmOverlay = document.getElementById('confirmOverlay');
+const confirmDialog = document.getElementById('confirmDialog');
+const confirmTitle = document.getElementById('confirmTitle');
+const confirmBody = document.getElementById('confirmBody');
+const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+const confirmOkBtn = document.getElementById('confirmOkBtn');
+
 const appVersionDisplay = document.getElementById('appVersion');
 
 const undoStack = [];
 
 let draftSaveTimer = null;
+
+// Set while the confirm dialog is open; holds who to tell the answer.
+let confirmPending = null;
 
 
 // =========================
@@ -1402,17 +1412,22 @@ function addFixAllButton(fixKeys) {
         .join(', ');
 
     fixAllButton.addEventListener('click', () => {
+        askConfirm(
+            'Fix all safe issues?',
+            fixAllMessage(fixKeys),
+            confirmed => {
+                if (!confirmed) return;
 
-        if (!confirmFixAll(fixKeys)) return;
+                pushUndo();
 
-        pushUndo();
+                fixKeys.forEach(key => runFix(key));
 
-        fixKeys.forEach(key => runFix(key));
-
-        updateStatistics();
-        updateEmailPreview();
-        saveDraft();
-        checkWriting();
+                updateStatistics();
+                updateEmailPreview();
+                saveDraft();
+                checkWriting();
+            }
+        );
     });
 
     actions.appendChild(fixAllButton);
@@ -1420,14 +1435,44 @@ function addFixAllButton(fixKeys) {
     checkResults.appendChild(actions);
 }
 
-function confirmFixAll(fixKeys) {
+function fixAllMessage(fixKeys) {
     const labels = fixKeys
         .map(key => FIX_LABELS[key])
         .join(', ');
 
-    return window.confirm(
-        `Fix all safe issues?\n\n${labels}\n\nYou can undo this afterwards.`
-    );
+    return `These rules will be fixed: ${labels}. You can undo this afterwards.`;
+}
+
+
+// =========================
+// CONFIRM DIALOG
+// =========================
+
+// Replaces window.confirm, which blocks the page and cannot be styled.
+// The answer arrives through `onAnswer`, so callers stay synchronous.
+function askConfirm(title, message, onAnswer) {
+    confirmTitle.textContent = title;
+    confirmBody.textContent = message;
+
+    confirmPending = onAnswer;
+
+    confirmOverlay.hidden = false;
+
+    confirmCancelBtn.focus();
+}
+
+function closeConfirm(confirmed) {
+    if (confirmOverlay.hidden) return;
+
+    confirmOverlay.hidden = true;
+
+    const onAnswer = confirmPending;
+
+    confirmPending = null;
+
+    checkBtn.focus();
+
+    if (onAnswer) onAnswer(confirmed);
 }
 
 function addUndoButton() {
@@ -1960,9 +2005,25 @@ document.addEventListener('click', event => {
     closeEmojiPicker();
 });
 
+confirmOkBtn.addEventListener('click', () => closeConfirm(true));
+confirmCancelBtn.addEventListener('click', () => closeConfirm(false));
+
+// A click on the backdrop dismisses; a click inside the dialog does not.
+confirmOverlay.addEventListener('click', event => {
+    if (confirmDialog.contains(event.target)) return;
+
+    closeConfirm(false);
+});
+
 document.addEventListener('keydown', event => {
 
     if (event.key !== 'Escape') return;
+
+    if (!confirmOverlay.hidden) {
+        closeConfirm(false);
+        return;
+    }
+
     if (emojiPicker.hidden) return;
 
     closeEmojiPicker();
