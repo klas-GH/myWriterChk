@@ -1047,6 +1047,85 @@ function collectLongSentences(text, issues) {
     });
 }
 
+function collectUnmatchedPunctuation(text, issues) {
+    const pairs = [
+        ['(', ')', 'parenthesis'],
+        ['[', ']', 'bracket'],
+        ['{', '}', 'brace']
+    ];
+
+    for (const [opening, closing, label] of pairs) {
+        const stack = [];
+
+        for (let i = 0; i < text.length; i++) {
+
+            if (text[i] === opening) {
+                stack.push(i);
+                continue;
+            }
+
+            if (text[i] === closing) {
+
+                if (stack.length) {
+                    stack.pop();
+                    continue;
+                }
+
+                // Unmatched closing bracket.
+                issues.push({
+                    severity: 'warning',
+                    message: `Unmatched closing ${label}: "${closing}"`,
+                    preview: {
+                        before: getLine(text, i),
+                        after: null
+                    },
+                    fix: null,
+                    fixKey: null
+                });
+            }
+        }
+
+        // Any remaining opening brackets are unmatched.
+        stack.forEach(index => {
+            issues.push({
+                severity: 'warning',
+                message: `Unmatched opening ${label}: "${opening}"`,
+                preview: {
+                    before: getLine(text, index),
+                    after: null
+                },
+                fix: null,
+                fixKey: null
+            });
+        });
+    }
+
+    // Quotes are paired by count for now.
+    // An odd number means one quotation mark is unmatched.
+    const quoteIndexes = [];
+
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === '"') {
+            quoteIndexes.push(i);
+        }
+    }
+
+    if (quoteIndexes.length % 2 !== 0) {
+        const index = quoteIndexes[quoteIndexes.length - 1];
+
+        issues.push({
+            severity: 'warning',
+            message: 'Unmatched quotation mark: `"`',
+            preview: {
+                before: getLine(text, index),
+                after: null
+            },
+            fix: null,
+            fixKey: null
+        });
+    }
+}
+
 
 // =========================
 // CHECK
@@ -1073,6 +1152,7 @@ function collectIssues(text) {
     collectSentenceCapitalization(text, issues, addFixable);
     collectCommaCapitalization(text, issues, addFixable);
     collectLongSentences(text, issues);
+    collectUnmatchedPunctuation(text, issues);
 
     // Overflow notes are not real issues.
     const realIssues = issues.filter(issue => issue.severity !== 'info');
