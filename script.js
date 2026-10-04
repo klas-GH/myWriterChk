@@ -234,20 +234,6 @@ function replaceSpacesAtLineIndex(line, index, length) {
     );
 }
 
-function fixSpecificMultipleSpacesAt(start, length) {
-    const text = textInput.value;
-
-    // Make sure the original issue still exists at this position.
-    if (!/^[ \t]{2,}$/.test(text.slice(start, start + length))) {
-        return;
-    }
-
-    textInput.value =
-        text.slice(0, start) +
-        ' ' +
-        text.slice(start + length);
-}
-
 function replaceSpaceBeforePunctuationAtLineIndex(line, index, length) {
     return (
         line.slice(0, index) +
@@ -256,46 +242,12 @@ function replaceSpaceBeforePunctuationAtLineIndex(line, index, length) {
     );
 }
 
-function fixSpecificSpaceBeforePunctuation(start, length) {
-    const text = textInput.value;
-    const value = text.slice(start, start + length);
-
-    // Make sure the original spacing issue still exists here.
-    if (!/^[ \t]+[,.!?;:]$/.test(value)) {
-        return;
-    }
-
-    textInput.value =
-        text.slice(0, start) +
-        value[value.length - 1] +
-        text.slice(start + length);
-}
-
 function replaceMissingSpaceAtLineIndex(line, index) {
     return (
         line.slice(0, index + 1) +
         ' ' +
         line.slice(index + 1)
     );
-}
-
-function fixSpecificMissingSpaceAt(index) {
-    const text = textInput.value;
-
-    // Make sure the original punctuation is still at this position
-    // and is still followed immediately by a letter.
-    if (
-        !SPACE_AFTER_PATTERN.test(text[index]) ||
-        !isLetter(text[index + 1]) ||
-        /\s/.test(text[index - 1] || '')
-    ) {
-        return;
-    }
-
-    textInput.value =
-        text.slice(0, index + 1) +
-        ' ' +
-        text.slice(index + 1);
 }
 
 function replaceRepeatedPunctuationAtLineIndex(line, index, length) {
@@ -318,20 +270,157 @@ function replaceRepeatedPunctuationAtLineIndex(line, index, length) {
     );
 }
 
-function fixSpecificRepeatedPunctuationAt(start, length) {
-    const text = textInput.value;
-    const original = text.slice(start, start + length);
+function replaceRepeatedWordAtLineIndex(line, index, length, word) {
+    return (
+        line.slice(0, index) +
+        word +
+        line.slice(index + length)
+    );
+}
 
-    // Make sure the original repeated punctuation still exists
-    // at this exact position.
+function createFixTarget(text, start, length) {
+    const CONTEXT = 40;
+
+    return {
+        start,
+        length,
+        before: text.slice(Math.max(0, start - CONTEXT), start),
+        after: text.slice(start + length, start + length + CONTEXT)
+    };
+}
+
+function resolveFixTarget(text, target, isValid) {
+    // First try the original position.
     if (
-        !/^!{2,}$/.test(original) &&
-        !/^\?{2,}$/.test(original) &&
-        !/^\.+$/.test(original)
+        target.start >= 0 &&
+        target.start + target.length <= text.length &&
+        isValid(text.slice(target.start, target.start + target.length))
+    ) {
+        return target.start;
+    }
+
+    // If the text changed, search for the same occurrence.
+    const candidates = [];
+
+    for (let start = 0; start <= text.length - target.length; start++) {
+
+        if (!isValid(text.slice(start, start + target.length))) {
+            continue;
+        }
+
+        const before = text.slice(
+            Math.max(0, start - target.before.length),
+            start
+        );
+
+        const after = text.slice(
+            start + target.length,
+            start + target.length + target.after.length
+        );
+
+        let score = 0;
+
+        if (before === target.before) score += 2;
+        if (after === target.after) score += 2;
+
+        if (before.endsWith(target.before)) score++;
+        if (after.startsWith(target.after)) score++;
+
+        candidates.push({
+            start,
+            score
+        });
+    }
+
+    if (!candidates.length) return -1;
+
+    candidates.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+
+        return Math.abs(a.start - target.start) -
+            Math.abs(b.start - target.start);
+    });
+
+    return candidates[0].start;
+}
+
+function fixSpecificMultipleSpacesAtTarget(target) {
+    const text = textInput.value;
+
+    const start = resolveFixTarget(
+        text,
+        target,
+        value => /^[ \t]{2,}$/.test(value)
+    );
+
+    if (start === -1) return;
+
+    textInput.value =
+        text.slice(0, start) +
+        ' ' +
+        text.slice(start + target.length);
+}
+
+function fixSpecificSpaceBeforePunctuationTarget(target) {
+    const text = textInput.value;
+
+    const start = resolveFixTarget(
+        text,
+        target,
+        value => /^[ \t]+[,.!?;:]$/.test(value)
+    );
+
+    if (start === -1) return;
+
+    const value = text.slice(start, start + target.length);
+
+    textInput.value =
+        text.slice(0, start) +
+        value[value.length - 1] +
+        text.slice(start + target.length);
+}
+
+function fixSpecificMissingSpaceAtTarget(target) {
+    const text = textInput.value;
+
+    const index = resolveFixTarget(
+        text,
+        target,
+        value => SPACE_AFTER_PATTERN.test(value)
+    );
+
+    if (index === -1) return;
+
+    if (
+        !isLetter(text[index + 1]) ||
+        /\s/.test(text[index - 1] || '')
     ) {
         return;
     }
 
+    textInput.value =
+        text.slice(0, index + 1) +
+        ' ' +
+        text.slice(index + 1);
+}
+
+function fixSpecificRepeatedPunctuationAtTarget(target) {
+    const text = textInput.value;
+
+    const start = resolveFixTarget(
+        text,
+        target,
+        value =>
+            /^!{2,}$/.test(value) ||
+            /^\?{2,}$/.test(value) ||
+            /^\.{4,}$/.test(value)
+    );
+
+    if (start === -1) return;
+
+    const original = text.slice(start, start + target.length);
 
     let replacement;
 
@@ -346,35 +435,68 @@ function fixSpecificRepeatedPunctuationAt(start, length) {
     textInput.value =
         text.slice(0, start) +
         replacement +
-        text.slice(start + length);
+        text.slice(start + target.length);
 }
 
-function replaceRepeatedWordAtLineIndex(line, index, length, word) {
-    return (
-        line.slice(0, index) +
-        word +
-        line.slice(index + length)
-    );
-}
-
-function fixSpecificRepeatedWordAt(start, length, word) {
+function fixSpecificRepeatedWordAtTarget(target, word) {
     const text = textInput.value;
-    const original = text.slice(start, start + length);
 
-    // Make sure this exact repeated-word occurrence still exists.
+    const escapedWord = word.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+    );
+
     const pattern = new RegExp(
-        `^${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        `^${escapedWord}\\s+${escapedWord}$`,
         'i'
     );
 
-    if (!pattern.test(original)) {
-        return;
-    }
+    const start = resolveFixTarget(
+        text,
+        target,
+        value => pattern.test(value)
+    );
+
+    if (start === -1) return;
 
     textInput.value =
         text.slice(0, start) +
         word +
-        text.slice(start + length);
+        text.slice(start + target.length);
+}
+
+function fixSpecificSentenceWordAtTarget(target, word) {
+    const text = textInput.value;
+
+    const start = resolveFixTarget(
+        text,
+        target,
+        value => value === word
+    );
+
+    if (start === -1) return;
+
+    textInput.value =
+        text.slice(0, start) +
+        capitalize(word) +
+        text.slice(start + target.length);
+}
+
+function fixSpecificCommaWordAtTarget(target, word) {
+    const text = textInput.value;
+
+    const start = resolveFixTarget(
+        text,
+        target,
+        value => value === word
+    );
+
+    if (start === -1) return;
+
+    textInput.value =
+        text.slice(0, start) +
+        word.toLowerCase() +
+        text.slice(start + target.length);
 }
 
 
@@ -619,6 +741,8 @@ function collectMultipleSpaces(text, issues, addFixable) {
 
         const start = match.index;
         const length = match[0].length;
+        const target = createFixTarget(text, start, length);
+
 
         issues.push({
             severity: 'warning',
@@ -634,7 +758,8 @@ function collectMultipleSpaces(text, issues, addFixable) {
             },
 
             // Remember this exact occurrence.
-            fix: () => fixSpecificMultipleSpacesAt(start, length),
+            fix: () => fixSpecificMultipleSpacesAtTarget(target),
+
 
             fixKey: 'spaces'
         });
@@ -657,6 +782,8 @@ function collectSpaceBeforePunctuation(text, issues, addFixable) {
 
         const start = match.index;
         const length = match[0].length;
+        const target = createFixTarget(text, start, length);
+
 
         issues.push({
             severity: 'warning',
@@ -672,7 +799,8 @@ function collectSpaceBeforePunctuation(text, issues, addFixable) {
             },
 
             // Remember this exact occurrence.
-            fix: () => fixSpecificSpaceBeforePunctuation(start, length),
+            fix: () => fixSpecificSpaceBeforePunctuationTarget(target),
+
 
             fixKey: 'punctuationSpace'
         });
@@ -690,6 +818,8 @@ function collectMissingSpaces(text, issues, addFixable) {
 
     indexes.slice(0, MAX_ISSUES_PER_RULE).forEach(index => {
 
+        const target = createFixTarget(text, index, 1);
+
         issues.push({
             severity: 'warning',
             message: `Missing space after "${text[index]}": "${truncate(getLine(text, index))}"`,
@@ -703,7 +833,7 @@ function collectMissingSpaces(text, issues, addFixable) {
             },
 
             // Remember THIS exact occurrence.
-            fix: () => fixSpecificMissingSpaceAt(index),
+            fix: () => fixSpecificMissingSpaceAtTarget(target),
 
             fixKey: 'missingSpace'
         });
@@ -727,6 +857,8 @@ function collectRepeatedPunctuation(text, issues, addFixable) {
         const start = match.index;
         const length = match[0].length;
 
+        const target = createFixTarget(text, start, length);
+
         issues.push({
             severity: 'warning',
             message: `Repeated punctuation: "${truncate(getLine(text, start))}"`,
@@ -740,8 +872,7 @@ function collectRepeatedPunctuation(text, issues, addFixable) {
                 )
             },
 
-            // Remember THIS exact occurrence.
-            fix: () => fixSpecificRepeatedPunctuationAt(start, length),
+            fix: () => fixSpecificRepeatedPunctuationAtTarget(target),
 
             fixKey: 'repeatedPunctuation'
         });
@@ -770,6 +901,8 @@ function collectRepeatedWords(text, issues, addFixable) {
         const start = match.index;
         const length = match[0].length;
 
+        const target = createFixTarget(text, start, length);
+
         issues.push({
             severity: 'warning',
             message: `Repeated word: "${truncate(getLine(text, start))}"`,
@@ -785,7 +918,7 @@ function collectRepeatedWords(text, issues, addFixable) {
             },
 
             // Remember THIS exact occurrence.
-            fix: () => fixSpecificRepeatedWordAt(start, length, word),
+            fix: () => fixSpecificRepeatedWordAtTarget(target, word),
 
             fixKey: 'repeatedWords'
         });
@@ -796,6 +929,7 @@ function collectRepeatedWords(text, issues, addFixable) {
         pushOverflow(issues, total, 'repeated word');
     }
 }
+
 
 function collectSentenceCapitalization(text, issues, addFixable) {
     const pattern = /(^[ \t]*|[.!?]["')\]]?[ \t]+)([\p{Ll}][\p{L}']*)/gmu;
@@ -827,6 +961,8 @@ function collectSentenceCapitalization(text, issues, addFixable) {
             capitalize(word) +
             line.slice(lineIndex + word.length);
 
+        const target = createFixTarget(text, wordStart, word.length);
+
         issues.push({
             severity: 'warning',
             message: `"${word}" should probably start with a capital letter.`,
@@ -836,8 +972,8 @@ function collectSentenceCapitalization(text, issues, addFixable) {
                 after
             },
 
-            // Store THIS occurrence's exact position.
-            fix: () => fixSpecificSentenceWordAt(word, wordStart),
+            // Remember THIS exact occurrence.
+            fix: () => fixSpecificSentenceWordAtTarget(target, word),
 
             fixKey: 'sentenceCapitalization'
         });
@@ -867,6 +1003,8 @@ function collectCommaCapitalization(text, issues, addFixable) {
         total++;
         if (total > MAX_ISSUES_PER_RULE) break;
 
+        const target = createFixTarget(text, wordStart, word.length);
+
         issues.push({
             severity: 'warning',
             message: `"${word}" after a comma should probably be lowercase.`,
@@ -879,7 +1017,7 @@ function collectCommaCapitalization(text, issues, addFixable) {
             ),
 
             // Remember this exact occurrence.
-            fix: () => fixSpecificCommaWordAt(wordStart, word),
+            fix: () => fixSpecificCommaWordAtTarget(target, word),
 
             fixKey: 'commaCapitalization'
         });
@@ -890,6 +1028,7 @@ function collectCommaCapitalization(text, issues, addFixable) {
         pushOverflow(issues, total, 'capitalization after comma');
     }
 }
+
 
 function collectLongSentences(text, issues) {
     splitSentences(text).forEach(sentence => {
@@ -1256,39 +1395,6 @@ function fixSentenceCapitalization() {
         }
     );
 }
-
-function fixSpecificSentenceWordAt(word, start) {
-    const text = textInput.value;
-
-    // Safety check: don't modify a different word if the text changed.
-    if (text.slice(start, start + word.length) !== word) {
-        return;
-    }
-
-    textInput.value =
-        text.slice(0, start) +
-        capitalize(word) +
-        text.slice(start + word.length);
-}
-
-
-
-
-function fixSpecificCommaWordAt(start, word) {
-    const text = textInput.value;
-
-    // Make sure the stored location still contains the
-    // word that was originally detected.
-    if (text.slice(start, start + word.length) !== word) {
-        return;
-    }
-
-    textInput.value =
-        text.slice(0, start) +
-        word.toLowerCase() +
-        text.slice(start + word.length);
-}
-
 
 // Only lowercases words that are known to be wrong after a comma.
 function fixAllCommaCapitalization() {
