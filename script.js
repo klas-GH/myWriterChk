@@ -1155,6 +1155,34 @@ function collectEmptyBrackets(text, issues) {
     }
 }
 
+function collectTrailingWhitespace(text, issues) {
+    const pattern = /[ \t]+(?=\r?$)/gm;
+    let total = 0;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+        total++;
+
+        if (total > MAX_ISSUES_PER_RULE) break;
+
+        issues.push({
+            severity: 'warning',
+            message: 'Trailing whitespace found.',
+
+            preview: {
+                before: getLine(text, match.index),
+                after: null
+            },
+
+            fix: null,
+            fixKey: null
+        });
+    }
+
+    if (total > MAX_ISSUES_PER_RULE) {
+        pushOverflow(issues, total, 'trailing whitespace');
+    }
+}
 
 // =========================
 // CHECK
@@ -1183,6 +1211,7 @@ function collectIssues(text) {
     collectLongSentences(text, issues);
     collectUnmatchedPunctuation(text, issues);
     collectEmptyBrackets(text, issues);
+    collectTrailingWhitespace(text, issues);
 
     // Overflow notes are not real issues.
     const realIssues = issues.filter(issue => issue.severity !== 'info');
