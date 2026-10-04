@@ -646,7 +646,6 @@ function collectMultipleSpaces(text, issues, addFixable) {
     }
 }
 
-
 function collectSpaceBeforePunctuation(text, issues, addFixable) {
     const pattern = /[ \t]+([,.!?;:])/g;
     let total = 0;
@@ -684,7 +683,6 @@ function collectSpaceBeforePunctuation(text, issues, addFixable) {
         pushOverflow(issues, total, 'space before punctuation');
     }
 }
-
 
 function collectMissingSpaces(text, issues, addFixable) {
     const indexes = findMissingSpaceIndexes(text);
@@ -755,7 +753,6 @@ function collectRepeatedPunctuation(text, issues, addFixable) {
     }
 }
 
-
 function collectRepeatedWords(text, issues, addFixable) {
     const pattern = /\b([\p{L}']+)\s+\1\b/giu;
     let total = 0;
@@ -799,8 +796,6 @@ function collectRepeatedWords(text, issues, addFixable) {
         pushOverflow(issues, total, 'repeated word');
     }
 }
-
-
 
 function collectSentenceCapitalization(text, issues, addFixable) {
     const pattern = /(^[ \t]*|[.!?]["')\]]?[ \t]+)([\p{Ll}][\p{L}']*)/gmu;
@@ -854,7 +849,6 @@ function collectSentenceCapitalization(text, issues, addFixable) {
     }
 }
 
-
 function collectCommaCapitalization(text, issues, addFixable) {
     const pattern = /,\s+(\p{Lu}\p{Ll}+)/gu;
     let total = 0;
@@ -876,8 +870,17 @@ function collectCommaCapitalization(text, issues, addFixable) {
         issues.push({
             severity: 'warning',
             message: `"${word}" after a comma should probably be lowercase.`,
-            preview: linePreviewForWord(text, wordStart, word, word.toLowerCase()),
+
+            preview: linePreviewForWord(
+                text,
+                wordStart,
+                word,
+                word.toLowerCase()
+            ),
+
+            // Remember this exact occurrence.
             fix: () => fixSpecificCommaWordAt(wordStart, word),
+
             fixKey: 'commaCapitalization'
         });
     }
@@ -944,11 +947,12 @@ function collectIssues(text) {
 
 function checkWriting() {
 
-    const text = textInput.value.trim();
+    const text = textInput.value;
 
     checkResults.innerHTML = '';
 
-    if (!text) {
+    if (!text.trim()) {
+
         issueCountDisplay.textContent = '';
         addCheckResult('warning', 'Enter some text first.');
         return;
