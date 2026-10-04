@@ -1243,8 +1243,8 @@ h2 {
 }
 
 
-// Confirm Dialog
-// =========================
+/* Confirm Dialog
+   ========================= */
 
 .confirm-overlay {
     position: fixed;
