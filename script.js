@@ -1128,14 +1128,17 @@ function collectUnmatchedPunctuation(text, issues) {
 
 function collectEmptyBrackets(text, issues) {
     const pattern = /(\(\s*\)|\[\s*\]|\{\s*\})/g;
+    let total = 0;
     let match;
 
     while ((match = pattern.exec(text)) !== null) {
-        const value = match[0];
+        total++;
+
+        if (total > MAX_ISSUES_PER_RULE) break;
 
         issues.push({
             severity: 'warning',
-            message: `Empty brackets or parentheses found: "${value}"`,
+            message: `Empty brackets or parentheses found: "${match[0]}"`,
 
             preview: {
                 before: getLine(text, match.index),
@@ -1145,6 +1148,10 @@ function collectEmptyBrackets(text, issues) {
             fix: null,
             fixKey: null
         });
+    }
+
+    if (total > MAX_ISSUES_PER_RULE) {
+        pushOverflow(issues, total, 'empty brackets or parentheses');
     }
 }
 
