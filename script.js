@@ -52,6 +52,7 @@ const KNOWN_ABBREVIATIONS = new Set([
 // Order in which automatic fixes are applied by "Fix All".
 const FIX_ORDER = [
     'spaces',
+    'multipleBlankLines',
     'punctuationSpace',
     'missingSpace',
     'repeatedPunctuation',
@@ -67,7 +68,8 @@ const FIX_LABELS = {
     repeatedPunctuation: 'repeated punctuation',
     repeatedWords: 'repeated words',
     sentenceCapitalization: 'sentence capitalization',
-    commaCapitalization: 'capitalization after comma'
+    commaCapitalization: 'capitalization after comma',
+    multipleBlankLines: 'multiple blank lines'
 };
 
 
@@ -496,6 +498,23 @@ function fixSpecificCommaWordAtTarget(target, word) {
     textInput.value =
         text.slice(0, start) +
         word.toLowerCase() +
+        text.slice(start + target.length);
+}
+
+function fixSpecificMultipleBlankLinesAtTarget(target) {
+    const text = textInput.value;
+
+    const start = resolveFixTarget(
+        text,
+        target,
+        value => /^(?:[ \t]*\r?\n){2,}$/.test(value)
+    );
+
+    if (start === -1) return;
+
+    textInput.value =
+        text.slice(0, start) +
+        '\n' +
         text.slice(start + target.length);
 }
 
@@ -1184,6 +1203,41 @@ function collectTrailingWhitespace(text, issues) {
     }
 }
 
+function collectMultipleBlankLines(text, issues, addFixable) {
+    const pattern = /^(?:[ \t]*\r?\n){2,}/gm;
+    let total = 0;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+        total++;
+
+        if (total > MAX_ISSUES_PER_RULE) break;
+
+        const start = match.index;
+        const length = match[0].length;
+        const target = createFixTarget(text, start, length);
+
+        issues.push({
+            severity: 'warning',
+            message: 'Multiple consecutive blank lines found.',
+
+            preview: {
+                before: '[multiple blank lines]',
+                after: '[single blank line]'
+            },
+
+            fix: () => fixSpecificMultipleBlankLinesAtTarget(target),
+
+            fixKey: 'multipleBlankLines'
+        });
+    }
+
+    if (total > 0) {
+        addFixable('multipleBlankLines');
+        pushOverflow(issues, total, 'multiple blank lines');
+    }
+}
+
 // =========================
 // CHECK
 // =========================
@@ -1212,6 +1266,7 @@ function collectIssues(text) {
     collectUnmatchedPunctuation(text, issues);
     collectEmptyBrackets(text, issues);
     collectTrailingWhitespace(text, issues);
+    collectMultipleBlankLines(text, issues, addFixable);
 
     // Overflow notes are not real issues.
     const realIssues = issues.filter(issue => issue.severity !== 'info');
@@ -1448,6 +1503,9 @@ function runFix(key) {
         case 'commaCapitalization':
             fixAllCommaCapitalization();
             break;
+        case 'multipleBlankLines':
+            fixMultipleBlankLines();
+            break;
         default:
             break;
     }
@@ -1547,6 +1605,12 @@ function fixAllCommaCapitalization() {
     );
 }
 
+function fixMultipleBlankLines() {
+    textInput.value = textInput.value.replace(
+        /^(?:[ \t]*\r?\n){2,}/gm,
+        '\n'
+    );
+}
 
 // =========================
 // STATISTICS
