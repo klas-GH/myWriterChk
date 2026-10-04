@@ -253,6 +253,29 @@ function fixSpecificMultipleSpacesAt(start, length) {
         text.slice(start + length);
 }
 
+function replaceSpaceBeforePunctuationAtLineIndex(line, index, length) {
+    return (
+        line.slice(0, index) +
+        line[index + length - 1] +
+        line.slice(index + length)
+    );
+}
+
+function fixSpecificSpaceBeforePunctuation(start, length) {
+    const text = textInput.value;
+    const value = text.slice(start, start + length);
+
+    // Make sure the original spacing issue still exists here.
+    if (!/^[ \t]+[,.!?;:]$/.test(value)) {
+        return;
+    }
+
+    textInput.value =
+        text.slice(0, start) +
+        value[value.length - 1] +
+        text.slice(start + length);
+}
+
 // =========================
 // PUNCTUATION SAFETY
 // =========================
@@ -531,15 +554,25 @@ function collectSpaceBeforePunctuation(text, issues, addFixable) {
         total++;
         if (total > MAX_ISSUES_PER_RULE) break;
 
+        const start = match.index;
+        const length = match[0].length;
+
         issues.push({
             severity: 'warning',
-            message: `Space before punctuation: "${truncate(getLine(text, match.index))}"`,
-            preview: linePreview(
-                text,
-                match.index,
-                line => line.replace(/[ \t]+([,.!?;:])/g, '$1')
-            ),
-            fix: fixSpaceBeforePunctuation,
+            message: `Space before punctuation: "${truncate(getLine(text, start))}"`,
+
+            preview: {
+                before: getLine(text, start),
+                after: replaceSpaceBeforePunctuationAtLineIndex(
+                    getLine(text, start),
+                    start - (text.lastIndexOf('\n', start - 1) + 1),
+                    length
+                )
+            },
+
+            // Remember this exact occurrence.
+            fix: () => fixSpecificSpaceBeforePunctuation(start, length),
+
             fixKey: 'punctuationSpace'
         });
     }
@@ -549,6 +582,7 @@ function collectSpaceBeforePunctuation(text, issues, addFixable) {
         pushOverflow(issues, total, 'space before punctuation');
     }
 }
+
 
 function collectMissingSpaces(text, issues, addFixable) {
     const indexes = findMissingSpaceIndexes(text);
