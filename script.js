@@ -1126,6 +1126,28 @@ function collectUnmatchedPunctuation(text, issues) {
     }
 }
 
+function collectEmptyBrackets(text, issues) {
+    const pattern = /(\(\s*\)|\[\s*\]|\{\s*\})/g;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+        const value = match[0];
+
+        issues.push({
+            severity: 'warning',
+            message: `Empty brackets or parentheses found: "${value}"`,
+
+            preview: {
+                before: getLine(text, match.index),
+                after: null
+            },
+
+            fix: null,
+            fixKey: null
+        });
+    }
+}
+
 
 // =========================
 // CHECK
@@ -1153,6 +1175,7 @@ function collectIssues(text) {
     collectCommaCapitalization(text, issues, addFixable);
     collectLongSentences(text, issues);
     collectUnmatchedPunctuation(text, issues);
+    collectEmptyBrackets(text, issues);
 
     // Overflow notes are not real issues.
     const realIssues = issues.filter(issue => issue.severity !== 'info');
