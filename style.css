@@ -1,44 +1,53 @@
 :root {
-    --primary-color: #0069d9;
-    --bg-color: #f8f9fa;
-    --text-dark: #202124;
-    --text-muted: #5f6368;
-    --border-color: #dadce0;
+    --primary-color: #1769e0;
+    --primary-hover: #0f5bc7;
+    --bg-color: #f3f6fa;
+    --text-dark: #17202b;
+    --text-muted: #667085;
+    --border-color: #d9e0e8;
     --panel-bg: #ffffff;
 
-    --success-color: #146c2f;
-    --warning-color: #9a5700;
-    --error-color: #d93025;
+    --success-color: #18794e;
+    --warning-color: #9a5b00;
+    --error-color: #d1291d;
 
     /* Text drawn on top of --primary-color. */
     --on-primary: #ffffff;
 
     /* Surfaces that sit on top of the panel (fix previews, emoji picker). */
     --raised-bg: #ffffff;
-    --raised-bg-hover: #eaf3ff;
+    --raised-bg-hover: #edf5ff;
+
+    /* The mail button keeps its own green in both themes. */
+    --email-color: #188038;
+    --email-hover: #137333;
 
     /* Native widgets (form fields, scrollbars) follow the light theme. */
     color-scheme: light;
 }
 
 html.dark-theme {
-    --primary-color: #5aa9ff;
+    --primary-color: #72b7ff;
+    --primary-hover: #91c8ff;
 
-    --bg-color: #151a21;
-    --text-dark: #e8eaed;
-    --text-muted: #aeb6c2;
-    --border-color: #343b46;
-    --panel-bg: #202630;
+    --bg-color: #0f141b;
+    --text-dark: #edf2f7;
+    --text-muted: #aab5c3;
+    --border-color: #303b49;
+    --panel-bg: #1a222d;
 
-    --success-color: #5fd18a;
-    --warning-color: #f0b35a;
-    --error-color: #ff7167;
+    --success-color: #63d391;
+    --warning-color: #f2b866;
+    --error-color: #ff756d;
 
     /* The dark theme's primary is a light blue, so text on it must be dark. */
-    --on-primary: #0d1520;
+    --on-primary: #07111d;
 
-    --raised-bg: #2b323d;
-    --raised-bg-hover: #37404f;
+    --raised-bg: #222c38;
+    --raised-bg-hover: #2c3948;
+
+    --email-color: #3fba72;
+    --email-hover: #55c783;
 
     color-scheme: dark;
 }
@@ -215,7 +224,7 @@ button:active {
 }
 
 .btn-primary:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
 .btn-secondary {
@@ -229,12 +238,12 @@ button:active {
 }
 
 .btn-email {
-    background-color: #188038;
+    background-color: var(--email-color);
     color: #ffffff;
 }
 
 .btn-email:hover {
-    background-color: #137333;
+    background-color: var(--email-hover);
 }
 
 
@@ -476,7 +485,7 @@ h2 {
 }
 
 .fix-all-btn:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
 @media (max-width: 600px) {
@@ -767,19 +776,19 @@ h2 {
 
 
 .btn-email.ready {
-    background-color: #188038;
+    background-color: var(--email-color);
 }
 
 .btn-email.ready:hover {
-    background-color: #137333;
+    background-color: var(--email-hover);
 }
 
 .btn-email:not(.ready) {
-    background-color: #6c757d;
+    background-color: #687382;
 }
 
 .btn-email:not(.ready):hover {
-    background-color: #5a6268;
+    background-color: #596371;
 }
 
 

@@ -10,8 +10,8 @@
   "categories": ["productivity", "utilities"],
   "lang": "en",
   "dir": "ltr",
-  "background_color": "#f8f9fa",
-  "theme_color": "#0069d9",
+  "background_color": "#f3f6fa",
+  "theme_color": "#1769e0",
   "icons": [
     {
       "src": "icons/icon.svg",
