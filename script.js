@@ -231,6 +231,28 @@ function replaceWordAtIndex(text, index, word, replacement) {
     );
 }
 
+function replaceSpacesAtLineIndex(line, index, length) {
+    return (
+        line.slice(0, index) +
+        ' ' +
+        line.slice(index + length)
+    );
+}
+
+function fixSpecificMultipleSpacesAt(start, length) {
+    const text = textInput.value;
+
+    // Make sure the original issue still exists at this position.
+    if (!/^[ \t]{2,}$/.test(text.slice(start, start + length))) {
+        return;
+    }
+
+    textInput.value =
+        text.slice(0, start) +
+        ' ' +
+        text.slice(start + length);
+}
+
 // =========================
 // PUNCTUATION SAFETY
 // =========================
@@ -470,15 +492,25 @@ function collectMultipleSpaces(text, issues, addFixable) {
         total++;
         if (total > MAX_ISSUES_PER_RULE) break;
 
+        const start = match.index;
+        const length = match[0].length;
+
         issues.push({
             severity: 'warning',
-            message: `Multiple spaces: "${truncate(getLine(text, match.index), 90, false)}"`,
-            preview: linePreview(
-                text,
-                match.index,
-                line => line.replace(/[ \t]{2,}/g, ' ')
-            ),
-            fix: fixMultipleSpaces,
+            message: `Multiple spaces: "${truncate(getLine(text, start), 90, false)}"`,
+
+            preview: {
+                before: getLine(text, start),
+                after: replaceSpacesAtLineIndex(
+                    getLine(text, start),
+                    start - (text.lastIndexOf('\n', start - 1) + 1),
+                    length
+                )
+            },
+
+            // Remember this exact occurrence.
+            fix: () => fixSpecificMultipleSpacesAt(start, length),
+
             fixKey: 'spaces'
         });
     }
@@ -488,6 +520,7 @@ function collectMultipleSpaces(text, issues, addFixable) {
         pushOverflow(issues, total, 'multiple spaces');
     }
 }
+
 
 function collectSpaceBeforePunctuation(text, issues, addFixable) {
     const pattern = /[ \t]+([,.!?;:])/g;
