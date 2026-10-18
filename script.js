@@ -2065,9 +2065,6 @@ if ('serviceWorker' in navigator) {
     let deferredPrompt = null;
     let dismissed = false;
     const banner = document.getElementById('installBanner');
-    try {
-        dismissed = localStorage.getItem('writerHelper.installBannerDismissed') === '1';
-    } catch {}
 
     const isStandalone = () =>
         window.matchMedia?.('(display-mode: standalone)').matches ||
@@ -2077,11 +2074,13 @@ if ('serviceWorker' in navigator) {
     const dismiss = () => {
         dismissed = true;
         hide();
-        try { localStorage.setItem('writerHelper.installBannerDismissed', '1'); } catch {}
     };
 
     document.getElementById('installBtn').addEventListener('click', () => {
-        if (!deferredPrompt) return;
+        if (!deferredPrompt) {
+            window.alert("Use the install icon near the address bar or choose your browser menu's app-install option. On iPhone or iPad, use Share > Add to Home Screen.");
+            return;
+        }
         const prompt = deferredPrompt;
         deferredPrompt = null;
         Promise.resolve(prompt.prompt()).catch(error =>
@@ -2102,5 +2101,6 @@ if ('serviceWorker' in navigator) {
         deferredPrompt = null;
         hide();
     });
+    show();
     if (isStandalone()) hide();
 })();
