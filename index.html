@@ -18,6 +18,16 @@
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 
     <link rel="stylesheet" href="style.css">
+    <style>
+        #installBanner[hidden] { display: none; }
+        #installBanner { position: fixed; z-index: 1000; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(520px, calc(100% - 24px)); display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid var(--primary-color); border-radius: 14px; background: var(--panel-bg); color: var(--text-dark); box-shadow: 0 12px 36px #17202b33; font: 14px system-ui, sans-serif; }
+        #installBanner p { margin: 4px 0 0; color: var(--text-muted); }
+        #installBanner .install-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+        #installBanner button { border: 0; border-radius: 8px; padding: 9px 12px; font: inherit; cursor: pointer; }
+        #installBanner #installBtn { background: var(--primary-color); color: var(--on-primary); font-weight: 700; }
+        #installBanner #installLater { background: var(--raised-bg-hover); color: var(--text-dark); }
+        @media (max-width: 480px) { #installBanner { align-items: stretch; flex-direction: column; } #installBanner .install-actions button { flex: 1; } }
+    </style>
 
     <script>
         // Applied before first paint so dark mode never flashes white.
@@ -254,6 +264,13 @@
         </div>
     </div>
 
+    <aside id="installBanner" role="region" aria-label="Install Writing and Email Helper" hidden>
+        <div><strong>Install Writing &amp; Email Helper</strong><p>Keep your writing tools ready on your device.</p></div>
+        <div class="install-actions">
+            <button id="installLater" type="button">Not now</button>
+            <button id="installBtn" type="button">Install</button>
+        </div>
+    </aside>
     <script src="script.js"></script>
 </body>
 </html>

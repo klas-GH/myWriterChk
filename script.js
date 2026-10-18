@@ -2059,3 +2059,48 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+
+// PWA install banner
+(() => {
+    let deferredPrompt = null;
+    let dismissed = false;
+    const banner = document.getElementById('installBanner');
+    try {
+        dismissed = localStorage.getItem('writerHelper.installBannerDismissed') === '1';
+    } catch {}
+
+    const isStandalone = () =>
+        window.matchMedia?.('(display-mode: standalone)').matches ||
+        navigator.standalone === true;
+    const hide = () => { banner.hidden = true; };
+    const show = () => { banner.hidden = dismissed || isStandalone(); };
+    const dismiss = () => {
+        dismissed = true;
+        hide();
+        try { localStorage.setItem('writerHelper.installBannerDismissed', '1'); } catch {}
+    };
+
+    document.getElementById('installBtn').addEventListener('click', () => {
+        if (!deferredPrompt) return;
+        const prompt = deferredPrompt;
+        deferredPrompt = null;
+        Promise.resolve(prompt.prompt()).catch(error =>
+            console.error('PWA install prompt failed:', error)
+        );
+        prompt.userChoice?.catch(error =>
+            console.error('PWA install choice failed:', error)
+        );
+        hide();
+    });
+    document.getElementById('installLater').addEventListener('click', dismiss);
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        deferredPrompt = event;
+        show();
+    });
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        hide();
+    });
+    if (isStandalone()) hide();
+})();
