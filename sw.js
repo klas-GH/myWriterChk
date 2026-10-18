@@ -35,7 +35,7 @@ self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys()
             .then(keys => Promise.all(
-                keys.filter(key => key !== CACHE)
+                keys.filter(key => key.startsWith('writer-helper-') && key !== CACHE)
                     .map(key => caches.delete(key))
             ))
             .then(() => self.clients.claim())
